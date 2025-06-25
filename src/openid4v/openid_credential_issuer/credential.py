@@ -347,6 +347,8 @@ class Credential(Endpoint):
         jwt_decoded = jwt.get_unverified_header(jwt_encoded)
         jwk = jwt_decoded["jwk"]
 
+        print("JWK: ", jwk)
+
         if "crv" not in jwk or jwk["crv"] != "P-256":
             _resp = {
                 "error": "invalid_proof",
