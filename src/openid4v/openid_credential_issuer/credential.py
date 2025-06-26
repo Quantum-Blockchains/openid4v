@@ -346,42 +346,53 @@ class Credential(Endpoint):
     def pKfromJWK(self, jwt_encoded):
         jwt_decoded = jwt.get_unverified_header(jwt_encoded)
         jwk = jwt_decoded["jwk"]
-
+        
         print("JWK: ", jwk)
+        if jwk["kty"] == "EC":
+            if "crv" not in jwk or jwk["crv"] != "P-256":
+                _resp = {
+                    "error": "invalid_proof",
+                    "error_description": "Credential Issuer only supports P-256 curves",
+                }
+                return _resp  # {"response_args": _resp, "client_id": client_id}
 
-        if "crv" not in jwk or jwk["crv"] != "P-256":
-            _resp = {
-                "error": "invalid_proof",
-                "error_description": "Credential Issuer only supports P-256 curves",
-            }
-            return _resp  # {"response_args": _resp, "client_id": client_id}
+            x = jwk["x"]
+            y = jwk["y"]
 
-        x = jwk["x"]
-        y = jwk["y"]
+            # Convert string coordinates to bytes
+            x_bytes = base64.urlsafe_b64decode(x + "=" * (4 - len(x) % 4))
+            y_bytes = base64.urlsafe_b64decode(y + "=" * (4 - len(y) % 4))
 
-        # Convert string coordinates to bytes
-        x_bytes = base64.urlsafe_b64decode(x + "=" * (4 - len(x) % 4))
-        y_bytes = base64.urlsafe_b64decode(y + "=" * (4 - len(y) % 4))
+            # Create a public key from the bytes
+            public_numbers = ec.EllipticCurvePublicNumbers(
+                x=int.from_bytes(x_bytes, "big"),
+                y=int.from_bytes(y_bytes, "big"),
+                curve=ec.SECP256R1(),
+            )
 
-        # Create a public key from the bytes
-        public_numbers = ec.EllipticCurvePublicNumbers(
-            x=int.from_bytes(x_bytes, "big"),
-            y=int.from_bytes(y_bytes, "big"),
-            curve=ec.SECP256R1(),
-        )
+            public_key = public_numbers.public_key()
 
-        public_key = public_numbers.public_key()
+            # Serialize the public key to PEM format
+            public_key_pem = public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
 
-        # Serialize the public key to PEM format
-        public_key_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
+            # Encode the public key in base64url format
 
-        # Encode the public key in base64url format
+            device_key = base64.urlsafe_b64encode(public_key_pem).decode("utf-8")
+        elif jwk["kty"] == "AKP":
+            
+            if "alg" not in jwk or jwk["alg"] != "Dilithium2" or jwk["alg"] != "Dilithium3" or jwk["alg"] != "Dilithium5" or jwk["alg"] != "ML-DSA-44":
+                _resp = {
+                    "error": "invalid_proof",
+                    "error_description": "Credential Issuer only supports ES256, Dilithium2, Dilithium3, Dilithium5 and ML-DSA-44 algorithm ",
+                }
+                return _resp
+            
+            pub = jwk["pub"]
 
-        device_key = base64.urlsafe_b64encode(public_key_pem).decode("utf-8")
-
+            device_key = pub
         return device_key
 
     def pKfromCWT(self, cwt_encoded):
