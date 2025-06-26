@@ -383,10 +383,10 @@ class Credential(Endpoint):
             device_key = base64.urlsafe_b64encode(public_key_pem).decode("utf-8")
         elif jwk["kty"] == "AKP":
             
-            if "alg" not in jwk or jwk["alg"] != "Dilithium2" or jwk["alg"] != "Dilithium3" or jwk["alg"] != "Dilithium5" or jwk["alg"] != "ML-DSA-44":
+            if "alg" not in jwk or jwk["alg"] != "Dilithium3":
                 _resp = {
                     "error": "invalid_proof",
-                    "error_description": "Credential Issuer only supports ES256, Dilithium2, Dilithium3, Dilithium5 and ML-DSA-44 algorithm ",
+                    "error_description": "Credential Issuer only supports ES256 and Dilithium3 algorithm ",
                 }
                 return _resp
             
