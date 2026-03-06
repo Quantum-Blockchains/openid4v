@@ -55,6 +55,6 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=["idpyoidc>=4.0.0", "Authlib>=1.5.1"],
+    install_requires=["idpyoidc==4.0.0", "Authlib==1.5.1"],
     zip_safe=False,
 )
